@@ -1,58 +1,50 @@
-// api/generate-shill.js
+export default async function handler(req, res) {
+  // --- CORS hlavičky, aby frontend mohol volať API z prehliadača ---
+  res.setHeader('Access-Control-Allow-Origin', '*'); // neskôr môžeme obmedziť na tvoju doménu
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-module.exports = async function handler(req, res) {
-  // Povolíme len POST
-  if (req.method !== "POST") {
-    res.status(405).json({ error: "Method Not Allowed. Use POST." });
-    return;
+  // Ak je to preflight (OPTIONS), iba odpovieme OK a nič nerobíme
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  // Povolená je iba POST
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method Not Allowed. Use POST.' });
   }
 
   try {
-    // Prečítaj telo requestu
-    let body = "";
-    await new Promise((resolve) => {
-      req.on("data", (chunk) => {
-        body += chunk;
-      });
-      req.on("end", resolve);
-    });
+    // Dáta z tela požiadavky, ktoré posiela tvoj frontend
+    const { brief, tone, includeHashtags } = req.body || {};
 
-    const { brief, tone, includeHashtags } = JSON.parse(body || "{}");
-
-    if (!brief) {
-      res.status(400).json({ error: "Missing 'brief' in request body." });
-      return;
+    // Rýchla validácia vstupu
+    if (!brief || !tone) {
+      return res
+        .status(400)
+        .json({ error: 'Missing required fields (brief, tone).' });
     }
 
-    // Toto je prompt pre AI
-    const prompt = `
-You are an assistant that writes crypto / token shill posts for social media.
+    // Tu by bola AI logika (OpenAI/Groq/atď.)
+    // Zatiaľ vraciame peknú demo odpoveď, aby produkt pôsobil hotovo.
+    const demoLines = [
+      '🚀 Real utility. Not vapor.',
+      '💼 Built for real holders, not exit liquidity.',
+      '📈 Long-term vision, measurable progress.',
+    ];
 
-Brief / context from user:
-"${brief}"
+    let output = `${demoLines.join(' ')}\n\nBrief: ${brief}\nTone: ${tone}`;
 
-Requested tone / style:
-"${tone || "clean hype / bullish but not cringe"}"
+    if (includeHashtags) {
+      output += '\n\n#LAB #utility #buidl #community';
+    }
 
-Output rules:
-- Write 1 short but high-energy post ready to publish (Twitter/X style).
-- Be understandable. Feel human, not generic AI.
-- If user said includeHashtags=true, add 3-6 relevant crypto/coin/CT hashtags at the end.
-- Mention the project token/ticker if it makes sense.
-- DO NOT add disclaimers like "not financial advice" unless it really fits the vibe.
-    `;
-
-    // Sem pôjde volanie na AI model.
-    // Zatiaľ vrátime fake text, aby to fungovalo bez kľúča.
-    const fakeText = `🚀 ${brief}\n\nWe’re building real utility. ${tone || ""} ${includeHashtags ? "#crypto #alpha #builders" : ""}`;
-
-    // Odošleme odpoveď klientovi
-    res.status(200).json({ text: fakeText.trim() });
-  } catch (err) {
-    console.error("ERROR in /api/generate-shill:", err);
-    res.status(500).json({
-      error: "Server error in generate-shill",
-      details: err.message,
+    // Pošleme späť JSON, ktorý tvoj frontend vie zobraziť v čiernom boxe
+    return res.status(200).json({
+      text: output,
     });
+  } catch (err) {
+    console.error('API error:', err);
+    return res.status(500).json({ error: 'Server error.' });
   }
-};
+}
