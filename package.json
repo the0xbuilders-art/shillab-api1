@@ -1,0 +1,7 @@
+{
+  "name": "shillab-api",
+  "version": "1.0.0",
+  "description": "Serverless API for Shillab AI post generator",
+  "main": "api/generate-shill.js",
+  "license": "MIT"
+}
